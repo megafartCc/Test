@@ -1,150 +1,159 @@
-const highlights = [
-  {
-    title: 'Simple foundation',
-    description: 'A landing page structure that is easy to expand with new sections and routes.',
-  },
-  {
-    title: 'Tailwind styling',
-    description: 'Utility-first classes keep the design consistent and fast to iterate on.',
-  },
-  {
-    title: 'Ready to grow',
-    description: 'Perfect starting point for adding products, features, testimonials, or a backend later.',
-  },
-]
+import { useEffect, useState } from 'react'
+import AuthForm from './components/AuthForm'
+
+async function request(path, options = {}) {
+  const response = await fetch(path, {
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+    ...options,
+  })
+
+  if (response.status === 204) {
+    return null
+  }
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Request failed.')
+  }
+
+  return data
+}
 
 function App() {
+  const [activeMode, setActiveMode] = useState('register')
+  const [loading, setLoading] = useState(false)
+  const [statusMessage, setStatusMessage] = useState('Use the form below to create an account or sign in.')
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const data = await request('/api/auth/me')
+        setUser(data.user)
+        setStatusMessage(`Welcome back, ${data.user.fullName}.`)
+      } catch (_error) {
+        setUser(null)
+      }
+    }
+
+    loadUser()
+  }, [])
+
+  async function handleSubmit(mode, values) {
+    setLoading(true)
+    setStatusMessage('')
+
+    try {
+      const data = await request(`/api/auth/${mode}`, {
+        method: 'POST',
+        body: JSON.stringify(values),
+      })
+
+      setUser(data.user)
+      setStatusMessage(data.message)
+      setActiveMode('login')
+    } catch (error) {
+      setStatusMessage(error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleLogout() {
+    setLoading(true)
+
+    try {
+      await request('/api/auth/logout', { method: 'POST' })
+      setUser(null)
+      setStatusMessage('You have been logged out.')
+    } catch (error) {
+      setStatusMessage(error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute left-1/2 top-0 h-96 w-96 -translate-x-1/2 rounded-full bg-accent-500/20 blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-fuchsia-500/10 blur-3xl" />
-      </div>
-
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6 lg:px-8">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-accent-400">Your Brand</p>
-        </div>
-        <nav className="hidden gap-6 text-sm text-slate-300 md:flex">
-          <a className="transition hover:text-white" href="#features">
-            Features
-          </a>
-          <a className="transition hover:text-white" href="#about">
-            About
-          </a>
-          <a className="transition hover:text-white" href="#contact">
-            Contact
-          </a>
-        </nav>
-      </header>
-
-      <main className="mx-auto flex w-full max-w-6xl flex-col gap-20 px-6 pb-16 pt-10 lg:px-8 lg:pt-16">
-        <section className="grid items-center gap-12 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-8">
-            <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200 backdrop-blur">
-              React + Tailwind starter layout
-            </span>
-            <div className="space-y-6">
-              <h1 className="max-w-3xl text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
-                Welcome to your next website.
+      <div className="mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-6 py-12 lg:px-8">
+        <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
+          <section className="space-y-8">
+            <div className="inline-flex rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-300">
+              Secure MySQL-backed authentication
+            </div>
+            <div className="space-y-4">
+              <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
+                Register or sign in to your account.
               </h1>
               <p className="max-w-2xl text-lg leading-8 text-slate-300">
-                Launch with a polished hero section, a clean feature grid, and a modern responsive layout that gives you a strong starting point.
+                This frontend is now focused on authentication, with a matching Express + MySQL backend that uses environment variables, hashed passwords, prepared statements, and HTTP-only cookies.
               </p>
             </div>
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <a
-                href="#features"
-                className="inline-flex items-center justify-center rounded-full bg-accent-500 px-6 py-3 font-medium text-white shadow-glow transition hover:bg-accent-400"
-              >
-                Explore layout
-              </a>
-              <a
-                href="#contact"
-                className="inline-flex items-center justify-center rounded-full border border-white/15 px-6 py-3 font-medium text-slate-200 transition hover:border-white/40 hover:bg-white/5"
-              >
-                Get in touch
-              </a>
-            </div>
-          </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/30 backdrop-blur-xl">
-            <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-6">
-              <p className="text-sm uppercase tracking-[0.3em] text-accent-400">Preview</p>
-              <div className="mt-6 space-y-4">
-                <div className="h-3 w-24 rounded-full bg-white/20" />
-                <div className="h-3 w-full rounded-full bg-white/10" />
-                <div className="h-3 w-5/6 rounded-full bg-white/10" />
-                <div className="grid gap-4 pt-4 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div className="h-24 rounded-xl bg-gradient-to-br from-accent-500/40 to-cyan-300/10" />
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div className="h-24 rounded-xl bg-gradient-to-br from-fuchsia-500/30 to-purple-300/10" />
-                  </div>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {[
+                'Uses MYSQL_DATABASE / MYSQL_HOST / MYSQL_PASSWORD / MYSQL_PORT / MYSQL_URL / MYSQL_USER',
+                'Passwords are hashed with bcrypt before storage',
+                'MySQL queries use prepared statements for safer input handling',
+              ].map((item) => (
+                <div key={item} className="rounded-3xl border border-slate-800 bg-slate-900/70 p-5 text-sm text-slate-300">
+                  {item}
                 </div>
-              </div>
+              ))}
             </div>
-          </div>
-        </section>
 
-        <section id="features" className="grid gap-6 md:grid-cols-3">
-          {highlights.map((item) => (
-            <article
-              key={item.title}
-              className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur transition hover:-translate-y-1 hover:border-accent-400/40"
-            >
-              <h2 className="text-xl font-semibold text-white">{item.title}</h2>
-              <p className="mt-3 text-sm leading-7 text-slate-300">{item.description}</p>
-            </article>
-          ))}
-        </section>
-
-        <section
-          id="about"
-          className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 p-8 lg:p-10"
-        >
-          <div className="grid gap-8 lg:grid-cols-[1fr_0.7fr] lg:items-center">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-accent-400">About this layout</p>
-              <h2 className="mt-4 text-3xl font-semibold text-white">Structured for clarity and easy expansion.</h2>
-              <p className="mt-4 max-w-2xl text-slate-300">
-                This page is organized into a clear hero, reusable feature cards, and a callout section so you can keep building without needing to refactor the whole front end later.
-              </p>
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 text-sm text-slate-300">
+              <p className="font-semibold text-white">Backend setup checklist</p>
+              <ul className="mt-3 space-y-2">
+                <li>1. Copy <code className="text-cyan-300">.env.example</code> to <code className="text-cyan-300">.env</code>.</li>
+                <li>2. Fill in your MySQL credentials or set <code className="text-cyan-300">MYSQL_URL</code>.</li>
+                <li>3. Run the SQL in <code className="text-cyan-300">server/schema.sql</code>.</li>
+                <li>4. Start the backend with <code className="text-cyan-300">npm run dev:server</code>.</li>
+              </ul>
             </div>
-            <div className="grid gap-4 rounded-3xl border border-white/10 bg-slate-950/50 p-6 text-sm text-slate-300">
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                <span>Responsive layout</span>
-                <span className="text-accent-400">Included</span>
-              </div>
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                <span>Backend required</span>
-                <span className="text-accent-400">Not yet</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Future-ready sections</span>
-                <span className="text-accent-400">Easy to add</span>
-              </div>
-            </div>
-          </div>
-        </section>
+          </section>
 
-        <section
-          id="contact"
-          className="flex flex-col items-start justify-between gap-6 rounded-3xl border border-accent-400/30 bg-accent-500/10 p-8 md:flex-row md:items-center"
-        >
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-accent-300">Ready when you are</p>
-            <h2 className="mt-3 text-2xl font-semibold text-white">Swap this section for your real CTA later.</h2>
-          </div>
-          <a
-            href="mailto:hello@example.com"
-            className="inline-flex rounded-full bg-white px-6 py-3 font-medium text-slate-950 transition hover:bg-slate-100"
-          >
-            hello@example.com
-          </a>
-        </section>
-      </main>
+          <section>
+            {user ? (
+              <div className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl shadow-cyan-950/30">
+                <p className="text-sm uppercase tracking-[0.2em] text-cyan-300">Authenticated</p>
+                <h2 className="mt-4 text-2xl font-semibold text-white">Welcome, {user.fullName}</h2>
+                <dl className="mt-6 space-y-3 text-sm text-slate-300">
+                  <div className="flex items-center justify-between gap-4 border-b border-slate-800 pb-3">
+                    <dt>Email</dt>
+                    <dd>{user.email}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 pb-3">
+                    <dt>User ID</dt>
+                    <dd>{user.id}</dd>
+                  </div>
+                </dl>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  disabled={loading}
+                  className="mt-6 w-full rounded-2xl border border-slate-700 px-4 py-3 font-semibold text-white transition hover:border-cyan-400 hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  Log out
+                </button>
+              </div>
+            ) : (
+              <AuthForm
+                activeMode={activeMode}
+                loading={loading}
+                onModeChange={setActiveMode}
+                onSubmit={handleSubmit}
+                statusMessage={statusMessage}
+              />
+            )}
+          </section>
+        </div>
+      </div>
     </div>
   )
 }
